@@ -19,7 +19,7 @@ import se.kth.id2212.ex2.bankrmi.RejectedException;
 public class MarketImpl extends UnicastRemoteObject implements Market {
 
     private List<Item> items;
-    private Map<Item, Account> wishList;
+    private List<Item> wished;
     private String marketName;
     Bank bankobj;
     private static final String DEFAULT_BANK_NAME = "BankOfHutta";
@@ -28,7 +28,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     public MarketImpl(String marketName) throws RemoteException {
         this.marketName = marketName;
         this.items = new ArrayList<>();
-        this.wishList = new HashMap<>();
+        this.wished = new ArrayList<Item>();
 //        items.add(new Item("Blaster Pistol", 230.47f));
 //        items.add(new Item("Thermal Detonator", 102f));
 //        items.add(new Item("Vibroblade", 199.99f));
@@ -49,8 +49,8 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
     
     @Override
-    public void sellItem(Account acc, String name, float price) throws RemoteException {
-        Item incoming = new Item(name, price, acc);
+    public void sellItem(TraderClient cl, String name, float price) throws RemoteException {
+        Item incoming = new Item(name, price, cl);
         items.add(incoming);
         checkWish(incoming);
         
@@ -59,13 +59,13 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
     
     @Override
-    public void buyItem(Account acc,String name, float price) throws RejectedException, RemoteException {
+    public void buyItem(TraderClient cl,String name, float price) throws RejectedException, RemoteException {
         try {
             for(Item i : items){
                 if(i.getName().equals(name) && i.getPrice() == price){
-                    acc.withdraw(price);
+                    cl.getAccount().withdraw(price);
                     
-                    i.getOwner().deposit(price);
+                    i.getOwner().getAccount().desposit(price);
                     items.remove(i);
                     break;
                 }
@@ -76,17 +76,18 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
 
     @Override
-    public void wishItem(Account acc, String name, float price) throws RemoteException {
-        wishList.put(new Item(name, price, acc), acc);
+    public void wishItem(TraderClient cl, String name, float price) throws RemoteException {
+        wished.add(new Item(name, price, cl.getAccount()));
     }
     
     private void checkWish(Item incoming){
-        Iterator it = wishList.entrySet().iterator();
+        Iterator it = wished.iterator();
         while(it.hasNext()){
-            Map.Entry<Item, Account> wish = (Map.Entry)it.next();
-            Item i = wish.getKey();
-            if(incoming.name.equals(i.name) && incoming.price <= i.price){
-                // notify
+            Item wish = (Item)it.next();
+            
+            if(incoming.name.equals(wish.name) && incoming.price <= wish.price){
+                incoming.getOwner().notify("Your wished item " + wish.name + " is currently in "
+                        + "stock for the price " + wish.price);
             }
         }
     }
@@ -95,18 +96,18 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         
         private String name;
         private float price;
-        private Account owner;
+        private TraderClient cl;
         
 
-        public Item(String name, float price, Account owner) {
+        public Item(String name, float price, TraderClient cl) {
             this.name = name;
             this.price = price;
-            this.owner = owner;
+            this.cl = cl;
         }
         
         public String getName(){return this.name;}
         public float getPrice(){return this.price;}
-        public Account getOwner(){return this.owner;}
+        public TraderClient getOwner(){return this.cl;}
         @Override
         public String toString() {
             return String.format("%-30s :: %10.2f wupiupi's", name, price);
