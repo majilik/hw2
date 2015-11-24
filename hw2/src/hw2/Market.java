@@ -14,4 +14,6 @@ public interface Market extends Remote {
             throws RejectedException, RemoteException;
     
     public void wishItem(Account acc, String name, float price) throws RemoteException;
+    
+    
 }
