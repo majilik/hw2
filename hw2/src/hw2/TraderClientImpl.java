@@ -220,7 +220,7 @@ public class TraderClientImpl {
                 account.withdraw(command.getAmount());
                 break;
             case balance:
-                System.out.println("balance: $" + account.getBalance());
+                System.out.println("balance: " + account.getBalance() + "wupiupi's");
                 break;
             default:
                 System.out.println("Illegal command");
@@ -249,26 +249,55 @@ public class TraderClientImpl {
                 }
                 return;
             case buyItem:
-                if (account != null && itemName != null && price != null)
+                if (account != null)
                 {
-                    marketobj.buyItem(account, itemName, price);
+                    if (itemName != null)
+                    {
+                        if (price != null)
+                        {
+                            marketobj.buyItem(account, itemName, price);
+                        }
+                        else
+                            System.out.println("Price not specified");
+                    }
+                    else
+                        System.out.println("Item not specified");
                 }
                 else
                     System.out.println("Account not specified");
                 return;
             case wishItem:
-                if (account != null && price != null)
+                if (account != null)
                 {
                     if (itemName != null)
-                    marketobj.wishItem(account, itemName, price);
+                    {
+                        if (price != null)
+                        {
+                            marketobj.wishItem(account, itemName, price);
+                        }
+                        else
+                            System.out.println("Price not specified");
+                    }
+                    else
+                        System.out.println("Item not specified");
                 }
                 else
                     System.out.println("Account not specified");
                 return;
             case sellItem:
-                if (account != null && itemName != null && price != null)
+                if (account != null)
                 {
-                    marketobj.sellItem(account, itemName, price);
+                    if (itemName != null)
+                    {
+                        if (price != null)
+                        {
+                            marketobj.sellItem(account, itemName, price);
+                        }
+                        else
+                            System.out.println("Price not specified");
+                    }
+                    else
+                        System.out.println("Item not specified");
                 }
                 else
                     System.out.println("Account not specified");
