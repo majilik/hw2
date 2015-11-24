@@ -1,3 +1,0 @@
-leffe 10
-olle 20
-nisse 5
