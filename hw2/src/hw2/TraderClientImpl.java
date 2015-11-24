@@ -6,12 +6,14 @@ import java.io.InputStreamReader;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.StringTokenizer;
 import se.kth.id2212.ex2.bankrmi.Account;
 import se.kth.id2212.ex2.bankrmi.Bank;
 import se.kth.id2212.ex2.bankrmi.RejectedException;
 
-public class TraderClientImpl implements TraderClient{
+@SuppressWarnings("serial")
+public class TraderClientImpl extends UnicastRemoteObject implements TraderClient{
 
     private static final String DEFAULT_MARKET = "MosEisleySpacePort";
     private static final String DEFAULT_BANK = "BankOfHutta";
@@ -21,7 +23,7 @@ public class TraderClientImpl implements TraderClient{
     private Bank bankobj;
     private String traderName;
 
-    public TraderClientImpl(String traderName) {
+    public TraderClientImpl(String traderName) throws RemoteException {
         this.traderName = traderName;
         try {
             try {
@@ -232,7 +234,7 @@ public class TraderClientImpl implements TraderClient{
                 account.withdraw(command.getAmount());
                 break;
             case balance:
-                System.out.println("balance: " + account.getBalance() + "wupiupi's");
+                System.out.println("balance: " + account.getBalance() + " wupiupi's");
                 break;
             default:
                 System.out.println("Illegal command");
@@ -375,10 +377,10 @@ public class TraderClientImpl implements TraderClient{
 
     public static void main(String[] args) {
         String trader = "Dave";
-        if (args.length > 1)
+        if (args.length >= 1)
             trader = args[0];
         try {
-            TraderClient client = new TraderClientImpl(args[0]);
+            TraderClient client = new TraderClientImpl(trader);
             try {
                 LocateRegistry.getRegistry(1099).list();
             } catch (RemoteException e) {

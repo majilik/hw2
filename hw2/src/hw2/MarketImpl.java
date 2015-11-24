@@ -29,13 +29,6 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         this.marketName = marketName;
         this.items = new ArrayList<>();
         this.wished = new ArrayList<Item>();
-//        items.add(new Item("Blaster Pistol", 230.47f));
-//        items.add(new Item("Thermal Detonator", 102f));
-//        items.add(new Item("Vibroblade", 199.99f));
-//        items.add(new Item("Stimpack", 150f));
-//        items.add(new Item("Red Power Crystal", 23999.99f));
-//        items.add(new Item("Jawa Juice", 5f));
-//        items.add(new Item("Hyperdrive Generator (Nubian)", 100000f));
     }
 
     @Override
@@ -65,29 +58,35 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
                 if(i.getName().equals(name) && i.getPrice() == price){
                     cl.getAccount().withdraw(price);
                     
-                    i.getOwner().getAccount().desposit(price);
+                    i.getOwner().getAccount().deposit(price);
+                    i.getOwner().notify("Your item " + i.getName() + " was bought for " + i.getPrice());
                     items.remove(i);
                     break;
                 }
             }
         } catch (RejectedException ex) {
-            Logger.getLogger(MarketImpl.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
     }
 
     @Override
     public void wishItem(TraderClient cl, String name, float price) throws RemoteException {
-        wished.add(new Item(name, price, cl.getAccount()));
+        wished.add(new Item(name, price, cl));
     }
     
     private void checkWish(Item incoming){
         Iterator it = wished.iterator();
         while(it.hasNext()){
             Item wish = (Item)it.next();
-            
-            if(incoming.name.equals(wish.name) && incoming.price <= wish.price){
-                incoming.getOwner().notify("Your wished item " + wish.name + " is currently in "
-                        + "stock for the price " + wish.price);
+            try
+            {
+                if(incoming.getName().equals(wish.getName()) && incoming.getPrice() <= wish.getPrice()){
+                    wish.getOwner().notify("Your wished item " + wish.getName() + " is currently in "
+                            + "stock for the price " + wish.getPrice());
+                }
+            }
+            catch (RemoteException ex) {
+                ex.printStackTrace();
             }
         }
     }
