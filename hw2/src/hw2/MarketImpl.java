@@ -29,9 +29,13 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         this.marketName = marketName;
         this.items = new ArrayList<>();
         this.wishList = new HashMap<>();
-        
-               
-      
+//        items.add(new Item("Blaster Pistol", 230.47f));
+//        items.add(new Item("Thermal Detonator", 102f));
+//        items.add(new Item("Vibroblade", 199.99f));
+//        items.add(new Item("Stimpack", 150f));
+//        items.add(new Item("Red Power Crystal", 23999.99f));
+//        items.add(new Item("Jawa Juice", 5f));
+//        items.add(new Item("Hyperdrive Generator (Nubian)", 100000f));
     }
 
     @Override
@@ -105,7 +109,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
 
         @Override
         public String toString() {
-            return String.format("%s :: %.2f wuoiupi's", name, price);
+            return String.format("%-30s :: %10.2f wupiupi's", name, price);
         }
 
     }

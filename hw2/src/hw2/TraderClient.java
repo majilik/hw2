@@ -86,10 +86,11 @@ public class TraderClient {
         boolean isBankCommand = true;
 
         if (tokenizer.hasMoreTokens()) {
+            String commandToken = tokenizer.nextToken();
 
             //Get command name
             try {
-                String commandNameString = tokenizer.nextToken();
+                String commandNameString = commandToken;
                 bankCommandName = TraderClient.BankCommandName.valueOf(TraderClient.BankCommandName.class, commandNameString);
             } catch (IllegalArgumentException commandDoesNotExist) {
                 isBankCommand = false;
@@ -119,7 +120,7 @@ public class TraderClient {
             
             //Get command name
             try {
-                String commandNameString = tokenizer.nextToken();
+                String commandNameString = commandToken;
                 marketCommandName = TraderClient.MarketCommandName.valueOf(TraderClient.MarketCommandName.class, commandNameString);
             } catch (IllegalArgumentException commandDoesNotExist) {
                 System.out.println("Illegal command");
@@ -230,9 +231,38 @@ public class TraderClient {
 
         switch (command.getCommandName()) {
             case listItems:
-                System.out.println("Market Items");
-                for (String item : marketobj.listItems())
-                    System.out.println("¤ " + item);
+                String[] listItems = marketobj.listItems();
+                if (listItems.length == 0)
+                {
+                    System.out.println("The Market is empty");
+                }
+                else
+                {
+                    System.out.println("Market Items");
+                    for (String item : listItems)
+                        System.out.println("¤ " + item);
+                }
+                return;
+            case buyItem:
+                if (account != null)
+                {
+                    marketobj.buyItem(account, command.getItemName(), command.getPrice());
+                }
+                else
+                    System.out.println("Account not specified");
+                return;
+            case wishItem:
+                return;
+            case sellItem:
+                if (account != null)
+                {
+                    marketobj.sellItem(account, command.getItemName(), command.getPrice());
+                }
+                else
+                    System.out.println("Account not specified");
+                return;
+            default:
+                System.out.println("Illegal command");
         }
     }
 
