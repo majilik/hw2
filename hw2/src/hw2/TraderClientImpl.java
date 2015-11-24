@@ -45,7 +45,6 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         BufferedReader consoleIn = new BufferedReader(new InputStreamReader(System.in));
 
         while (true) {
-            System.out.print(traderName + "@" + DEFAULT_MARKET + ">");
             try {
                 String userInput = consoleIn.readLine();
                 Command cmd = parse(userInput);
@@ -72,7 +71,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     @Override
     //Used as a callback
     public void notify(String message) throws RemoteException {
-        System.out.println(message);
+        System.out.println("Notification: " + message);
     }
 
     static enum BankCommandName {

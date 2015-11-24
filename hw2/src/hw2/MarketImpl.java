@@ -1,17 +1,10 @@
 package hw2;
 
-import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import se.kth.id2212.ex2.bankrmi.Account;
 import se.kth.id2212.ex2.bankrmi.Bank;
 import se.kth.id2212.ex2.bankrmi.RejectedException;
 
@@ -53,20 +46,16 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     
     @Override
     public void buyItem(TraderClient cl,String name, float price) throws RejectedException, RemoteException {
-        try {
             for(Item i : items){
                 if(i.getName().equals(name) && i.getPrice() == price){
                     cl.getAccount().withdraw(price);
                     
                     i.getOwner().getAccount().deposit(price);
-                    i.getOwner().notify("Your item " + i.getName() + " was bought for " + i.getPrice());
+                    i.getOwner().notify("Your item " + i.getName() + " was bought for " + i.getPrice() + " wupiupi's");
                     items.remove(i);
                     break;
                 }
             }
-        } catch (RejectedException ex) {
-            ex.printStackTrace();
-        }
     }
 
     @Override
@@ -82,7 +71,8 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
             {
                 if(incoming.getName().equals(wish.getName()) && incoming.getPrice() <= wish.getPrice()){
                     wish.getOwner().notify("Your wished item " + wish.getName() + " is currently in "
-                            + "stock for the price " + wish.getPrice());
+                            + "stock for the price " + wish.getPrice() + " wupiupi's");
+                    wished.remove(wish);
                 }
             }
             catch (RemoteException ex) {
@@ -109,7 +99,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         public TraderClient getOwner(){return this.cl;}
         @Override
         public String toString() {
-            return String.format("%-30s :: %10.2f wupiupi's", name, price);
+            return String.format("%-30s %10.2f wupiupi's", name, price);
         }
 
     }
