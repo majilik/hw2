@@ -6,7 +6,7 @@ import java.rmi.registry.LocateRegistry;
 
 public class Server {
     private static final String USAGE = "java bankrmi.Server <bank_rmi_url>";
-    private static final String BANK = "Nordea";
+    private static final String BANK = "BankOfHutta";
 
     public Server(String bankName) {
         try {
