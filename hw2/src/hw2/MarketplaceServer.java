@@ -17,13 +17,16 @@ public class MarketplaceServer {
                 LocateRegistry.createRegistry(1099);
             }
             Naming.rebind(marketName, marketobj);
+            
             System.out.println(marketName + " is ready.");
         } catch (Exception e) {
             e.printStackTrace();
         }
+        
     }
 
     public static void main(String[] args) {
         new MarketplaceServer(MARKET);
+        
     }
 }
