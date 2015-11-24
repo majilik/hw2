@@ -1,0 +1,11 @@
+.idea/
+*.iml
+*.class
+.DS_STORE
+.classpath
+.project
+.settings/
+target/
+/hw2/nbproject/private/
+/hw2/dist/
+/hw2/build/
