@@ -50,7 +50,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     
     @Override
     public void sellItem(Account acc, String name, float price) throws RemoteException {
-        Item incoming = new Item(name, price);
+        Item incoming = new Item(name, price, acc);
         items.add(incoming);
         checkWish(incoming);
         
@@ -63,13 +63,10 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         try {
             for(Item i : items){
                 if(i.getName().equals(name) && i.getPrice() == price){
-                    items.remove(i);
-                    try {
-                        acc.withdraw(price);
-                    } catch (RejectedException e) {
-                    }
+                    acc.withdraw(price);
                     
-                    i.getOwener().deposit(price);
+                    i.getOwner().deposit(price);
+                    items.remove(i);
                     break;
                 }
             }
@@ -80,7 +77,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
 
     @Override
     public void wishItem(Account acc, String name, float price) throws RemoteException {
-        wishList.put(new Item(name, price), acc);
+        wishList.put(new Item(name, price, acc), acc);
     }
     
     private void checkWish(Item incoming){
@@ -101,14 +98,15 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         private Account owner;
         
 
-        public Item(String name, float price) {
+        public Item(String name, float price, Account owner) {
             this.name = name;
             this.price = price;
+            this.owner = owner;
         }
         
         public String getName(){return this.name;}
         public float getPrice(){return this.price;}
-        public Account getOwener(){return this.owner;}
+        public Account getOwner(){return this.owner;}
         @Override
         public String toString() {
             return String.format("%-30s :: %10.2f wupiupi's", name, price);
