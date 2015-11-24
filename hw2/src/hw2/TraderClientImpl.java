@@ -11,7 +11,7 @@ import se.kth.id2212.ex2.bankrmi.Account;
 import se.kth.id2212.ex2.bankrmi.Bank;
 import se.kth.id2212.ex2.bankrmi.RejectedException;
 
-public class TraderClientImpl {
+public class TraderClientImpl implements TraderClient{
 
     private static final String DEFAULT_MARKET = "MosEisleySpacePort";
     private static final String DEFAULT_BANK = "BankOfHutta";
@@ -21,7 +21,8 @@ public class TraderClientImpl {
     private Bank bankobj;
     private String traderName;
 
-    public TraderClientImpl() {
+    public TraderClientImpl(String traderName) {
+        this.traderName = traderName;
         try {
             try {
                 LocateRegistry.getRegistry(1099).list();
@@ -59,6 +60,17 @@ public class TraderClientImpl {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public Account getAccount() throws RemoteException {
+        return account;
+    }
+
+    @Override
+    //Used as a callback
+    public void notify(String message) throws RemoteException {
+        System.out.println(message);
     }
 
     static enum BankCommandName {
@@ -255,7 +267,7 @@ public class TraderClientImpl {
                     {
                         if (price != null)
                         {
-                            marketobj.buyItem(account, itemName, price);
+                            marketobj.buyItem(this, itemName, price);
                         }
                         else
                             System.out.println("Price not specified");
@@ -273,7 +285,7 @@ public class TraderClientImpl {
                     {
                         if (price != null)
                         {
-                            marketobj.wishItem(account, itemName, price);
+                            marketobj.wishItem(this, itemName, price);
                         }
                         else
                             System.out.println("Price not specified");
@@ -291,7 +303,7 @@ public class TraderClientImpl {
                     {
                         if (price != null)
                         {
-                            marketobj.sellItem(account, itemName, price);
+                            marketobj.sellItem(this, itemName, price);
                         }
                         else
                             System.out.println("Price not specified");
@@ -362,6 +374,21 @@ public class TraderClientImpl {
     }
 
     public static void main(String[] args) {
-        new TraderClientImpl().repl();
+        String trader = "Dave";
+        if (args.length > 1)
+            trader = args[0];
+        try {
+            TraderClient client = new TraderClientImpl(args[0]);
+            try {
+                LocateRegistry.getRegistry(1099).list();
+            } catch (RemoteException e) {
+                LocateRegistry.createRegistry(1099);
+            }
+            Naming.rebind(trader, client);
+            System.out.println(trader + " is ready.");
+            ((TraderClientImpl) client).repl();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
