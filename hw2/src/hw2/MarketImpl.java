@@ -51,14 +51,9 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     @Override
     public void sellItem(Account acc, String name, float price) throws RemoteException {
         Item incoming = new Item(name, price);
-        try {
-            
-            acc.deposit(price);
-            items.add(incoming);
-            checkWish(incoming);
-        } catch (RejectedException ex) {
-            Logger.getLogger(MarketImpl.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        items.add(incoming);
+        checkWish(incoming);
+        
         
        
     }
@@ -66,10 +61,15 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     @Override
     public void buyItem(Account acc,String name, float price) throws RejectedException, RemoteException {
         try {
-            acc.withdraw(price);
             for(Item i : items){
-                if(i.getName().equals(name)){
+                if(i.getName().equals(name) && i.getPrice() == price){
                     items.remove(i);
+                    try {
+                        acc.withdraw(price);
+                    } catch (RejectedException e) {
+                    }
+                    
+                    i.getOwener().deposit(price);
                     break;
                 }
             }
@@ -98,6 +98,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         
         private String name;
         private float price;
+        private Account owner;
         
 
         public Item(String name, float price) {
@@ -106,7 +107,8 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
         }
         
         public String getName(){return this.name;}
-
+        public float getPrice(){return this.price;}
+        public Account getOwener(){return this.owner;}
         @Override
         public String toString() {
             return String.format("%-30s :: %10.2f wupiupi's", name, price);
