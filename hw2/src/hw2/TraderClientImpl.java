@@ -23,6 +23,8 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     private Bank bankobj;
     private String traderName;
 
+    
+    // set up the registry and create RMI of band and marketplace.
     public TraderClientImpl(String traderName) throws RemoteException {
         this.traderName = traderName;
         try {
@@ -41,6 +43,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         System.out.println("Connected to bank: " + DEFAULT_BANK);
     }
 
+    // main loop
     public void repl() {
         BufferedReader consoleIn = new BufferedReader(new InputStreamReader(System.in));
 
@@ -75,6 +78,8 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         System.out.println(message);
     }
 
+    // command enums
+    
     static enum BankCommandName {
         newAccount, getAccount, deleteAccount, deposit, withdraw, balance, quit,
         help, list;
@@ -84,6 +89,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         listItems, sellItem, buyItem, wishItem;
     };
 
+    // parses the command, 
     private Command parse(String userInput) {
         if (userInput == null) {
             return null;
@@ -96,6 +102,8 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
 
         TraderClientImpl.BankCommandName bankCommandName = null;
         TraderClientImpl.MarketCommandName marketCommandName = null;
+        
+        // Test if the command is a bank command
         
         boolean isBankCommand = true;
 
@@ -132,6 +140,8 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                 return new BankCommand(bankCommandName, userName, amount);
             }
             
+            // If not, try if it is a market command
+            
             //Get command name
             try {
                 String commandNameString = commandToken;
@@ -163,6 +173,8 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         return null;
     }
 
+    // executes the parsed Bank command
+    
     void execute(BankCommand command) throws RemoteException, RejectedException {
         if (command == null) {
             return;
@@ -240,7 +252,9 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                 System.out.println("Illegal command");
         }
     }
-
+    
+    
+    // executes the parsed Market command
     void execute(MarketCommand command) throws RemoteException, RejectedException {
         if (command == null) {
             return;
@@ -324,7 +338,10 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     //Superclass only for limiting return type
     private class Command {
     };
-
+    
+    
+    // inner classes used for the different commands.  
+    
     private class BankCommand extends Command {
 
         private String userName;
