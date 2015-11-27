@@ -94,6 +94,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
      * @param incoming The item being put on sale on the market.
      */
     private void checkWish(Item incoming){
+        List<Item> removeList = new ArrayList<>();
         Iterator it = wished.iterator();
         while(it.hasNext()){
             Item wish = (Item)it.next();
@@ -102,13 +103,19 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
                 if(incoming.getName().equals(wish.getName()) && incoming.getPrice() <= wish.getPrice()){
                     wish.getOwner().notify("Your wished item " + wish.getName() + " is currently in "
                             + "stock for the price " + wish.getPrice() + " wupiupi's");
-                    wished.remove(wish);
+                    removeList.add(wish);
                 }
             }
             catch (RemoteException ex) {
                 ex.printStackTrace();
             }
         }
+        
+        for(Item wish : removeList)
+        {
+            wished.remove(wish);
+        }
+        
     }
 
     /**
