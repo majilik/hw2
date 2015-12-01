@@ -14,9 +14,9 @@ public interface Market extends Remote {
     
     public void wishItem(String owner, String name, float price) throws RemoteException;
     
-    public boolean login(TraderClient cl, String owner, String password);
+    public boolean login(TraderClient cl, String owner, String password) throws RemoteException;
     
-    public void register(String owner, String password);
+    public void register(String owner, String password) throws RemoteException;
     
     
 }
