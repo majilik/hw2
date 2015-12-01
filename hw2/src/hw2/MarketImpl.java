@@ -25,7 +25,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
 
     public MarketImpl(String marketName) throws RemoteException {
         this.marketName = marketName;
-        init();
+        //init();
     }
     
     private void init(){
@@ -147,7 +147,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
 
     @Override
-    public boolean login(TraderClient cl, String owner, String password) {
+    public boolean login(TraderClient cl, String owner, String password) throws RemoteException{
         if(users.containsKey(owner)){
             if(password.equals(users.get(owner))){
                 owners.put(owner, cl);
@@ -159,7 +159,7 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
 
     @Override
-    public void register(String owner, String password) {
+    public void register(String owner, String password) throws RemoteException{
         database.register(owner, password);
       
     }
