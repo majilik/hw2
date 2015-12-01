@@ -28,12 +28,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     
     // set up the registry and create RMI of band and marketplace.
     public TraderClientImpl() throws RemoteException {
-       Scanner in = new Scanner(System.in);
        
-       traderName = in.nextLine();
-       password = in.nextLine();
-       in.close();
-        
         
         try {
             try {
@@ -342,11 +337,28 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         }
     }
     
-    public void login(){
-        
+    public void login() throws RemoteException{
+        loginCredentials();
+        if(marketobj.login(this, traderName, password)){
+            System.out.println("Login successful");
+        }else{
+            System.out.println("Login failed, please try again: ");
+            loginCredentials();
+        }
     }
     
-    public void register(){
+    public void register() throws RemoteException{
+        loginCredentials();
+        marketobj.register(traderName, password);
+        if(!marketobj.login(this, traderName, password))
+            System.out.println("These are not the droids you're looking for.");
+    }
+    
+    public void loginCredentials(){
+        try (Scanner in = new Scanner(System.in)) {
+            traderName = in.nextLine();
+            password = in.nextLine();
+        }
         
     }
     
@@ -421,7 +433,22 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                 LocateRegistry.createRegistry(1099);
             }
             
-            // login / register
+            System.out.println("Press 1 for login, 2 for register or other "
+                    + "for selling death sticks.");
+            Scanner in = new Scanner(System.in);
+            switch (in.nextInt()) {
+                case 1:
+                    ((TraderClientImpl)client).login();
+                    break;
+                case 2:
+                    ((TraderClientImpl)client).register();
+                    break;
+                default:
+                    System.out.println("You don't wanna sell me death sticks.");
+                    return;
+            }
+            
+           
             
             String name = ((TraderClientImpl)client).getTraderName();
             Naming.rebind(name, client);
