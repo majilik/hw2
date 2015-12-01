@@ -7,6 +7,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 import se.kth.id2212.ex2.bankrmi.Account;
 import se.kth.id2212.ex2.bankrmi.Bank;
@@ -22,11 +23,18 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     private Market marketobj;
     private Bank bankobj;
     private String traderName;
+    private String password;
 
     
     // set up the registry and create RMI of band and marketplace.
-    public TraderClientImpl(String traderName) throws RemoteException {
-        this.traderName = traderName;
+    public TraderClientImpl() throws RemoteException {
+       Scanner in = new Scanner(System.in);
+       
+       traderName = in.nextLine();
+       password = in.nextLine();
+       in.close();
+        
+        
         try {
             try {
                 LocateRegistry.getRegistry(1099).list();
@@ -282,7 +290,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                     {
                         if (price != null)
                         {
-                            marketobj.buyItem(this, itemName, price);
+                            marketobj.buyItem(traderName, itemName, price);
                         }
                         else
                             System.out.println("Price not specified");
@@ -300,7 +308,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                     {
                         if (price != null)
                         {
-                            marketobj.wishItem(this, itemName, price);
+                            marketobj.wishItem(traderName, itemName, price);
                         }
                         else
                             System.out.println("Price not specified");
@@ -318,7 +326,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                     {
                         if (price != null)
                         {
-                            marketobj.sellItem(this, itemName, price);
+                            marketobj.sellItem(traderName, itemName, price);
                         }
                         else
                             System.out.println("Price not specified");
@@ -332,6 +340,18 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
             default:
                 System.out.println("Illegal command");
         }
+    }
+    
+    public void login(){
+        
+    }
+    
+    public void register(){
+        
+    }
+    
+    public String getTraderName(){
+        return traderName;
     }
 
     //Superclass only for limiting return type
@@ -392,21 +412,24 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     }
 
     public static void main(String[] args) {
-        String trader = "Dave";
-        if (args.length >= 1)
-            trader = args[0];
+        
         try {
-            TraderClient client = new TraderClientImpl(trader);
+            TraderClient client = new TraderClientImpl();
             try {
                 LocateRegistry.getRegistry(1099).list();
             } catch (RemoteException e) {
                 LocateRegistry.createRegistry(1099);
             }
-            Naming.rebind(trader, client);
-            System.out.println(trader + " is ready.");
+            
+            // login / register
+            
+            String name = ((TraderClientImpl)client).getTraderName();
+            Naming.rebind(name, client);
+            System.out.println(name + " is ready.");
             ((TraderClientImpl) client).repl();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        
     }
 }
