@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import se.kth.id2212.ex2.bankrmi.Account;
 import se.kth.id2212.ex2.bankrmi.Bank;
 import se.kth.id2212.ex2.bankrmi.RejectedException;
 
@@ -19,21 +21,22 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     private List<Item> items;
     private String marketName;
     private HashMap<String, String> users;
-    private HashMap<String, TraderClient> owners;
+    private HashMap<String, TraderClient> clients;
     private JDBC database;
     Bank bankobj;
 
     public MarketImpl(String marketName) throws RemoteException {
         this.marketName = marketName;
-        //init();
+        init();
     }
 
     private void init() {
         this.wished = new ArrayList<>();
-        this.owners = new HashMap<>();
+        this.clients = new HashMap<>();
         this.database = new JDBC();
         try {
             items = database.itemQuery();
+            users = database.userQuery();
         } catch (SQLException ex) {
             Logger.getLogger(MarketImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -77,22 +80,37 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     /**
      * Buys an item on the market.
      *
-     * @param owner The client buying the item.
+     * @param buyer The client buying the item.
      * @param name The name of the item.
      * @param price The price of the item.
      * @throws RejectedException
      * @throws RemoteException
      */
     @Override
-    public void buyItem(String owner, String name, float price) throws RejectedException, RemoteException {
-        TraderClient cl = owners.get(owner);
+    public void buyItem(String buyer, String name, float price) throws RejectedException, RemoteException {
+        TraderClient cl = clients.get(buyer);
         for (Item i : items) {
             if (i.getName().equals(name) && i.getPrice() == price) {
-                cl.getAccount().withdraw(price);
+                Account acct = cl.getAccount();
+                if (acct != null)
+                {
+                    acct.withdraw(price);
+                }
+                else
+                {
+                    cl.notify("No account stated!");
+                    break;
+                }
 
-                TraderClient ownerClient = owners.get(i.getOwner());
-                ownerClient.getAccount().deposit(price);
-                ownerClient.notify("Your item " + i.getName() + " was bought for " + i.getPrice() + " wupiupi's");
+                TraderClient ownerClient = clients.get(i.getOwner());
+                if(ownerClient != null)
+                {
+                    //Only get money if you're logged in ;-) else Jabba The Hut takes them..
+                    ownerClient.getAccount().deposit(price);
+                    ownerClient.notify("Your item " + i.getName() + " was bought for " + i.getPrice() + " wupiupi's");
+                }
+                database.incrementBoughtItems(buyer);
+                database.incrementSoldItems(i.getOwner());
                 database.deleteItem(i);
                 items.remove(i);
                 break;
@@ -128,9 +146,12 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
             Item wish = (Item) it.next();
             try {
                 if (incoming.getName().equals(wish.getName()) && incoming.getPrice() <= wish.getPrice()) {
-                    TraderClient cl = owners.get(wish.getOwner());
-                    cl.notify("Your wished item " + wish.getName() + " is currently in "
+                    TraderClient cl = clients.get(wish.getOwner());
+                    if(cl != null)
+                    {
+                        cl.notify("Your wished item " + wish.getName() + " is currently in "
                             + "stock for the price " + wish.getPrice() + " wupiupi's");
+                    }
                     removeList.add(wish);
                 }
             } catch (RemoteException ex) {
@@ -145,10 +166,10 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
 
     @Override
-    public boolean login(TraderClient cl, String owner, String password) throws RemoteException{
-        if(users.containsKey(owner)){
-            if(password.equals(users.get(owner))){
-                owners.put(owner, cl);
+    public boolean login(TraderClient cl, String owner, String password) throws RemoteException {
+        if (users.containsKey(owner)) {
+            if (password.equals(users.get(owner))) {
+                clients.put(owner, cl);
                 return true;
             }
         }
@@ -157,9 +178,14 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
     }
 
     @Override
-    public void register(String owner, String password) throws RemoteException{
+    public void register(String owner, String password) throws RemoteException {
         database.register(owner, password);
 
+    }
+
+    @Override
+    public String viewRecord(String username) throws RemoteException {
+        return database.getRecord(username);
     }
 
     /**
@@ -223,26 +249,6 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
             }
         }
 
-        private ResultSet executeQuery(String query) {
-            ResultSet tmp = null;
-            try (Statement stmt = conn.createStatement()) {
-                tmp = stmt.executeQuery(query);
-            } catch (SQLException se) {
-                se.printStackTrace();
-            }
-            return tmp;
-        }
-        
-        private boolean executeUpdate(String update) {
-            int updatedRows = 0;
-            try (Statement stmt = conn.createStatement()) {
-                updatedRows = stmt.executeUpdate(update);
-            } catch (SQLException se) {
-                se.printStackTrace();
-            }
-            return updatedRows > 0;
-        }
-
         /**
          * Gets the list of items persisted in the database.
          *
@@ -251,17 +257,20 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
          */
         public List<Item> itemQuery() throws SQLException {
             final String query = "SELECT name, price, owner FROM Item";
-
-            ResultSet rs = executeQuery(query);
             List<Item> list = new ArrayList<>();
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery(query);
 
-            while (rs.next()) {
-                String name = rs.getString(1);
-                float price = rs.getInt(2);
-                String owner = rs.getString(3);
-                list.add(new Item(name, price, owner));
+                while (rs.next()) {
+                    String name = rs.getString(1);
+                    float price = rs.getInt(2);
+                    String owner = rs.getString(3);
+                    list.add(new Item(name, price, owner));
+                }
+                rs.close();
+            } catch (SQLException se) {
+                se.printStackTrace();
             }
-            rs.close();
             return list;
         }
 
@@ -273,16 +282,20 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
          */
         public HashMap<String, String> userQuery() throws SQLException {
             final String query = "SELECT name, password FROM UserTable";
-            
-            ResultSet rs = executeQuery(query);
             HashMap<String, String> map = new HashMap<>();
 
-            while (rs.next()) {
-                String username = rs.getString(1);
-                String password = rs.getString(2);
-                map.put(username, password);
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery(query);
+                while (rs.next()) {
+                    String username = rs.getString(1);
+                    String password = rs.getString(2);
+                    map.put(username, password);
+                }
+                rs.close();
+            } catch (SQLException se) {
+                se.printStackTrace();
             }
-            rs.close();
+
             return map;
         }
 
@@ -293,11 +306,15 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
          * @param item
          */
         public void deleteItem(Item item) {
-            final String update = String.format("DELETE TOP 1 FROM Item WHERE "
-                    + "name = %s AND price = %f AND owner = %s",
+            final String update = String.format(Locale.US, "DELETE TOP(1) FROM Item WHERE "
+                    + "name = '%s' AND price = %f AND owner = '%s'",
                     item.name, item.price, item.owner);
-
-            executeUpdate(update);
+            
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(update);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
         }
 
         /**
@@ -307,22 +324,111 @@ public class MarketImpl extends UnicastRemoteObject implements Market {
          * @param item
          */
         public void addItem(Item item) {
-            final String update = String.format("INSERT INTO Item (name, price, owner) "
-                    + "VALUES (%s, %f, %s)", item.name, item.price, item.owner);
+            final String update = String.format(Locale.US, "INSERT INTO Item (name, price, owner) "
+                    + "VALUES ('%s', %f, '%s')", item.name, item.price, item.owner);
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(update);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+        
+        public void incrementBoughtItems(String user)
+        {   
+            int boughtItems = 0;
+            final String query = String.format("SELECT boughtItems FROM Activity WHERE username = '%s'", 
+                    user);
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery(query);
+                while (rs.next()) {
+                    boughtItems = rs.getInt(1);
+                }
+                rs.close();
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
             
-            executeUpdate(update);
+            boughtItems++;
+            
+            String update = String.format("UPDATE Activity SET boughtItems = %d WHERE username = '%s'", boughtItems, user);
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(update);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+        
+        public void incrementSoldItems(String user)
+        {   
+            int soldItems = 0;
+            final String query = String.format("SELECT soldItems FROM Activity WHERE username = '%s'", 
+                    user);
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery(query);
+                while (rs.next()) {
+                    soldItems = rs.getInt(1);
+                }
+                rs.close();
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+            
+            soldItems++;
+            
+            String update = String.format("UPDATE Activity SET soldItems = %d WHERE username = '%s'", 
+                    soldItems, user);
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(update);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
         }
 
         /**
          * Registers a user.
+         *
          * @param username
          * @param password
          */
         public void register(String username, String password) {
-            final String update = String.format("INSERT INTO UserTable (name, password) "
-                    + "VALUES (%s, %s)", username, password);
+            String update = String.format("INSERT INTO UserTable (name, password) "
+                    + "VALUES ('%s', '%s')", username, password);
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(update);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
             
-            executeUpdate(update);
+            update = String.format("INSERT INTO Activity (boughtItems, soldItems, username) "
+                    + "VALUES (0, 0, '%s')", username);
+            
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(update);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+
+        private String getRecord(String user) {
+            final String query = String.format("SELECT boughtItems, soldItems FROM Activity WHERE username = '%s'", 
+                    user);
+            int bought = 0;
+            int sold = 0;
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery(query);
+                while (rs.next()) {
+                    bought = rs.getInt(1);
+                    sold = rs.getInt(2);
+                }
+                rs.close();
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+            return String.format("[Record]\nUser: %s \nBought: %d \nSold: %d", user, bought, sold);
         }
 
     }

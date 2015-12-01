@@ -24,6 +24,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     private Bank bankobj;
     private String traderName;
     private String password;
+    private BufferedReader consoleIn;
 
     
     // set up the registry and create RMI of band and marketplace.
@@ -44,12 +45,11 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         }
         System.out.println("Connected to market: " + DEFAULT_MARKET);
         System.out.println("Connected to bank: " + DEFAULT_BANK);
+        consoleIn = new BufferedReader(new InputStreamReader(System.in));
     }
 
     // main loop
     public void repl() {
-        BufferedReader consoleIn = new BufferedReader(new InputStreamReader(System.in));
-
         while (true) {
             try {
                 String userInput = consoleIn.readLine();
@@ -80,6 +80,23 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         System.out.println("Notification: " + message);
     }
 
+    private void initAccount(){
+        try{
+           account = bankobj.getAccount(traderName);
+           if(account == null)
+               account = bankobj.newAccount(traderName);
+        }
+        catch(RejectedException rje)
+        {
+            rje.printStackTrace();
+        }
+        catch(RemoteException rme)
+        {
+            rme.printStackTrace();
+        }
+        
+    }
+
     // command enums
     
     static enum BankCommandName {
@@ -88,7 +105,7 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     };
 
     static enum MarketCommandName {
-        listItems, sellItem, buyItem, wishItem;
+        listItems, sellItem, buyItem, wishItem, viewRecord;
     };
 
     // parses the command, 
@@ -216,7 +233,6 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         switch (command.getCommandName()) {
             case newAccount:
                 account = bankobj.newAccount(userName);
-                traderName = userName;
                 return;
             case deleteAccount:
                 if(bankobj.deleteAccount(userName))
@@ -265,6 +281,9 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
         Float price = command.getPrice();
 
         switch (command.getCommandName()) {
+            case viewRecord:
+                System.out.println(marketobj.viewRecord(traderName));
+                return;
             case listItems:
                 String[] listItems = marketobj.listItems();
                 if (listItems.length == 0)
@@ -338,28 +357,37 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
     }
     
     public void login() throws RemoteException{
-        loginCredentials();
-        if(marketobj.login(this, traderName, password)){
-            System.out.println("Login successful");
-        }else{
+        loginCredentials(false);
+        while(!(marketobj.login(this, traderName, password)))
+        {
             System.out.println("Login failed, please try again: ");
-            loginCredentials();
+            loginCredentials(false);
         }
+        System.out.println("Login successful");
     }
     
     public void register() throws RemoteException{
-        loginCredentials();
+        loginCredentials(true);
         marketobj.register(traderName, password);
         if(!marketobj.login(this, traderName, password))
             System.out.println("These are not the droids you're looking for.");
     }
     
-    public void loginCredentials(){
-        try (Scanner in = new Scanner(System.in)) {
-            traderName = in.nextLine();
-            password = in.nextLine();
+    public void loginCredentials(boolean register){
+        try
+        {
+            traderName = consoleIn.readLine();
+            password = consoleIn.readLine();
+            while(password.length() < 8 && register)
+            {
+                System.out.println("Password too short (8 characters minimum).");
+                password = consoleIn.readLine();
+            }
         }
-        
+        catch (IOException ie)
+        {
+            ie.printStackTrace();
+        }
     }
     
     public String getTraderName(){
@@ -448,10 +476,9 @@ public class TraderClientImpl extends UnicastRemoteObject implements TraderClien
                     return;
             }
             
-           
-            
             String name = ((TraderClientImpl)client).getTraderName();
             Naming.rebind(name, client);
+            ((TraderClientImpl)client).initAccount();
             System.out.println(name + " is ready.");
             ((TraderClientImpl) client).repl();
         } catch (Exception e) {

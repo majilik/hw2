@@ -9,7 +9,7 @@ public interface Market extends Remote {
     
     public void sellItem(String owner, String name, float price) throws RemoteException;
     
-    public void buyItem(String owner, String name, float price) 
+    public void buyItem(String buyer, String name, float price) 
             throws RejectedException, RemoteException;
     
     public void wishItem(String owner, String name, float price) throws RemoteException;
@@ -17,6 +17,8 @@ public interface Market extends Remote {
     public boolean login(TraderClient cl, String owner, String password) throws RemoteException;
     
     public void register(String owner, String password) throws RemoteException;
+
+    public String viewRecord(String traderName) throws RemoteException;
     
     
 }
